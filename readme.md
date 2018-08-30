@@ -1,4 +1,4 @@
-# Spring PetClinic Sample Application - Edited by JMR
+# Spring PetClinic Sample Application - Edited by Jonathan
 
 
 ## Understanding the Spring Petclinic application with a few diagrams
