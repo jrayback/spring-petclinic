@@ -1,4 +1,4 @@
-# Spring PetClinic Sample Application - Edited by Mr. Rayback
+# Spring PetClinic Sample Application - Edited by Jonathan Rayback
 
 
 ## Understanding the Spring Petclinic application with a few diagrams
