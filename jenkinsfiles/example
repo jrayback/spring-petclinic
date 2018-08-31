@@ -49,5 +49,13 @@ pipeline {
         sh 'sleep 4'
       }
     }
+    // JMR sample test to prove I can update the pipeline
+    stage('Yet another stage') {
+      agent any
+      steps {
+        //sample dummy step
+        sh 'sleep 5'
+      }
+    }
   }
 }
