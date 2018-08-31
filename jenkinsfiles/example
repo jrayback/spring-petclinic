@@ -8,6 +8,24 @@ pipeline {
   }
 
   stages {
+    stage('Pre-validate') {
+      parallel {
+        stage('Static Code Analysis') {
+          agent any
+          steps {
+            sh "sleep 12"
+            echo "Static code analysis PASS"
+          }
+        }
+        stage('Unit Tests') {
+          agent any
+          steps {
+            sh "sleep 3"
+            echo "Unit tests PASS"
+          }
+        }
+      }
+    }
     stage('Build') {
       agent any
       steps {
