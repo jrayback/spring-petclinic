@@ -8,3 +8,4 @@ target/*
 .vscode
 .vagrant
 Vagrantfile
+/temp
