@@ -5,8 +5,8 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = 'true'
-    MONITOR_PASS = 'true'
+    SMOKETEST_PASS = 'false'
+    MONITOR_PASS = 'false'
     SHORT_PAUSE = 3
     MED_PAUSE = 8
     LONG_PAUSE = 21
@@ -215,7 +215,7 @@ pipeline {
             echo "Redirecting load balancer..."
             sh "sleep '${env.SHORT_PAUSE}'"
             // send a message to the channel that we've redirected prod
-            slackSend (color: '#00FF00', message: "${env.JOB_DESCRIPTION}\nDARK PROD is new LIGHT PROD")
+            slackSend (color: '#00FF00', message: "${env.JOB_DESCRIPTION}\nDARK PROD is now LIGHT PROD")
             echo "Load balancer now pointing new light prod."
           }
         }
@@ -226,6 +226,7 @@ pipeline {
           agent any
           steps {
             echo 'Monitoring http traffic in new prod environment...'
+            slackSend (color: '#FF0000', message: "${env.JOB_DESCRIPTION}\nMonitoring LIGHT PROD...")
             sh "sleep '${env.LONG_PAUSE}'"
             // This script simply let's me simulate a failure in prod if desired, set env
             // variable to 'false' and the pipeline will fail here.
