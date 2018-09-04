@@ -68,20 +68,23 @@ pipeline {
           }
         }
       }
-      // Deploy to ephemeral dev environment
-      // in this case I pause to let the developer manually inspect
+      // Deploy to ephemeral dev environment - in this case locally running
+      // docker container
+      // For now, I pause to let the developer manually inspect
       // before continuing...
       stage('Deploy to Dev') {
         agent any
         steps {
-          echo "Deploying to dev environment..."
-          sh "sleep 3"
+          sh 'docker rm -f petclinic-tomcat-temp || true'
+          sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+          // send a message to the channel that a dev environment is available
+          slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
         }
       }
     //}
     //stage('Acceptance'){
-      // Deploy to Test environment. In this case the docker container
-      // simulates this. Test environment could be ephemeral or permanent
+      // Deploy to Test environment. In this case another docker container
+      // could simulate this. Test environment could be ephemeral or permanent
       // but doesn't need to fully simulate prod environment.
       stage('Deploy to Test') {
         input {
@@ -90,8 +93,11 @@ pipeline {
         }
         agent any
         steps {
-          sh 'docker rm -f petclinic-tomcat-temp || true'
-          sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+          // sh 'docker rm -f petclinic-tomcat-temp || true'
+          // sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+          echo "Deploying to test environment..."
+          sh "sleep 2"
+          echo "Deployed to test environment"
         }
       }
       stage('Smoke-Test') {
