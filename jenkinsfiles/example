@@ -5,8 +5,8 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = 1
-    MONITOR_PASS = 1
+    SMOKETEST_PASS = true
+    MONITOR_PASS = true
     SHORT_PAUSE = 1
     MED_PAUSE = 2
     LONG_PAUSE = 3
@@ -111,14 +111,13 @@ pipeline {
             echo "Running smoke tests..."
             sh "sleep '${env.MED_PAUSE}'"
             script {
-              if( env.SMOKETEST_PASS == 1 ) {
-                echo "Smoke tests PASS"
-              } else {
+              if( env.SMOKETEST_PASS == false ) {
                 echo "Smoke tests FAIL"
                 currentBuild.result = 'FAILURE'
                 error('Smoke tests FAIL')
               }
             }
+            echo "Smoke tests PASS"
           }
         }
         stage('Acceptance Tests') {
