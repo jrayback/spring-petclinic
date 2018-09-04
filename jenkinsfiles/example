@@ -10,6 +10,7 @@ pipeline {
     SHORT_PAUSE = 3
     MED_PAUSE = 8
     LONG_PAUSE = 21
+    JOB_MESSAGE = "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})"
   }
 
   stages {
@@ -20,7 +21,7 @@ pipeline {
         // a Jenkins shared library so that notification configuration information
         // is abstracted from the Jenkinsfile. Since it's only Slack for now
         // and only a demo, this is sufficient
-        slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+        slackSend (color: '#FFFF00', message: env.JOB_MESSAGE)
       }
     }
     // See if it's even worth building this 
@@ -148,6 +149,8 @@ pipeline {
         echo "Deploying to 'Princess'..."
         sh "sleep '${env.SHORT_PAUSE}'"
         echo "Deployed to 'Princess'"
+        // send a message to the channel that we've deployed to 'Princess'
+        slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) deployed to PRINCESS.\n*Awaiting permission to push to PROD...*")
       }
     }
     // Checks done before going to prod. In some cases, these might be manual.
