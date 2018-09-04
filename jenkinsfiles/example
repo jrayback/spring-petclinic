@@ -111,7 +111,7 @@ pipeline {
             echo "Running smoke tests..."
             sh "sleep '${env.MED_PAUSE}'"
             script {
-              if( env.SMOKETEST_PASS ) {
+              if( env.SMOKETEST_PASS == true ) {
                 echo "Smoke tests PASS"
               } else {
                 echo "Smoke tests FAIL"
