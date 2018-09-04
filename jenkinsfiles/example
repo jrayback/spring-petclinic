@@ -5,7 +5,7 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = 'false'
+    SMOKETEST_PASS = 'true'
     MONITOR_PASS = 'true'
     SHORT_PAUSE = 1
     MED_PAUSE = 2
@@ -16,13 +16,14 @@ pipeline {
     stage ('Start') {
       steps{
         // send build started notification
-        // TODO: there should be a notification script, in scm and put
-        // a shared library so that notification configuration information
+        // NOTE: There could be a notification script, in scm and put
+        // a Jenkins shared library so that notification configuration information
         // is abstracted from the Jenkinsfile. Since it's only Slack for now
-        // this is sufficient
+        // and only a demo, this is sufficient
         slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
       }
     }
+    // See if it's even worth building this 
     stage('Pre-Build') {
       parallel {
         stage('Run Unit Tests') {
@@ -82,12 +83,14 @@ pipeline {
         //***sh 'docker rm -f petclinic-tomcat-temp || true'
         //***sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
         // send a message to the channel that a dev environment is available
-        slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
+        slackSend (color: '#00FF00', message: "DEV environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
       }
     }
-    // Deploy to Test environment. In this case another docker container
-    // could simulate this. Test environment could be ephemeral or permanent
-    // but doesn't need to fully simulate prod environment.
+    // Deploy to Test environment. In this case it's the local docker container made
+    // publically available via vagrant share.
+    // The test environment could be ephemeral or permanent
+    // but doesn't need to fully simulate prod environment...
+    // Just enough horsepower to run automated tests.
     stage('Deploy to Test') {
       agent any
       steps {
@@ -97,10 +100,11 @@ pipeline {
         echo "Deploying to test environment..."
         sh "sleep '${env.SHORT_PAUSE}'"
         echo "Deployed to test environment"
-        // send a message to the channel that a dev environment is available
-        slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) deployed to Test: http://jmr.liatrio.petclinic.ngrok.io/petclinic/")
+        // send a message to the channel that we've deployed to test
+        slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) deployed to TEST: http://jmr.liatrio.petclinic.ngrok.io/petclinic/")
       }
     }
+    // Run automated tests
     stage('Validate') {
       parallel {
         stage('Smoke Tests') {
@@ -110,6 +114,8 @@ pipeline {
             // Basic functionality, fail fast
             echo "Running smoke tests..."
             sh "sleep '${env.MED_PAUSE}'"
+            // This script simply let's me simulate a smoke test failure if desired, set env
+            // variable to 'false' and the pipeline will fail here.
             script {
               if( env.SMOKETEST_PASS == 'false' ) {
                 echo "Smoke tests FAIL"
@@ -125,7 +131,9 @@ pipeline {
           steps {
             // Run automated acceptance tests
             // More comprehensive, look for regressions
+            echo "Running acceptance tests..."
             sh "sleep '${env.LONG_PAUSE}'"
+            echo "Acceptance tests PASS"
           }
         }
       }
@@ -137,10 +145,13 @@ pipeline {
     stage("Deploy to 'Princess'") {
       agent any
       steps {
-        //sample dummy step
+        echo "Deploying to 'Princess'..."
         sh "sleep '${env.SHORT_PAUSE}'"
+        echo "Deployed to 'Princess'"
       }
     }
+    // Checks done before going to prod. In some cases, these might be manual.
+    // Obviously we want to automate as much as possible.
     stage('Pre-Prod') {
       parallel {
         stage('UAT') {
@@ -176,39 +187,66 @@ pipeline {
     }
     // When everything looks good in Princess, deploy to dark prod
     stage('Deploy to Dark Prod') {
+      // For now I have a manual step to deploy to prod. This assumes that some amount
+      // of examinationn will occur in 'Princess' before electing to promote.
+      // Could easily be all automated.
       input {
         message "Deploy to prod?"
         ok "Yes"
       }
       agent any
       steps {
-        //sample dummy step
+        echo 'Deploying to dark prod...'
         sh "sleep '${env.SHORT_PAUSE}'"
+        echo 'Deployed to dark prod.'
+        // send a message to the channel that we've deployed to dark prod
+        slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) deployed to DARK PROD")
       }
     }
     stage('Cutover') {
       parallel {
         // Make dark prod light
-        stage('Redirect Load Balancer') {
+        stage('Redirect Load Balancer to New Light Prod') {
           agent any
           steps {
-            echo "Load balancer now pointing a new light prod..."
+            echo "Redirecting load balancer..."
+            sh "sleep '${env.SHORT_PAUSE}'"
+            // send a message to the channel that we've redirected prod
+            slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) DARK PROD is new LIGHT PROD")
+            echo "Load balancer now pointing new light prod."
           }
         }
         // Monitor http traffic in new light prod environment for a 
         // set period of time, if things start going awry, revert to previous
         // light prod and fail, otherwise succeed.
-        stage('Monitor New Prod Environment') {
+        stage('Monitor New Light Prod') {
           agent any
           steps {
             echo 'Monitoring http traffic in new prod environment...'
             sh "sleep '${env.LONG_PAUSE}'"
+            // This script simply let's me simulate a failure in prod if desired, set env
+            // variable to 'false' and the pipeline will fail here.
+            script {
+              if( env.MONITOR_PASS == 'false' ) {
+                echo "Something's gone horribly wrong in production!"
+                // Point load balancer back to former light prod
+                // SEE SIMILAR CODE IN STAGE ABOVE...this is another option for a shared script of some sort in
+                // a Jenkins shared library
+                echo "Redirecting load balancer..."
+                sh "sleep '${env.SHORT_PAUSE}'"
+                // send a message to the channel that we've reverted prod
+                slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) LIGHT PROD REVERTED!")
+                currentBuild.result = 'FAILURE'
+                error('Prod monitoring FAIL')
+              }
+            }
             echo 'Traffic looks good!'
           }
         }
       }
     }
   }
+  // After the pipeline has completed, publish ABORT, FAIL or SUCCESS results to Slack
   post { 
     aborted {
       slackSend (color: '#FF0000', message: "ABORTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
