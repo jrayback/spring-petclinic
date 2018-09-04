@@ -11,6 +11,8 @@ pipeline {
     stage ('Start') {
       steps{
         // send build started notification
+        // TODO: there should be a notification script built, in scm and put
+        // a shared library...
         slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
       }
     }
@@ -80,6 +82,17 @@ pipeline {
         //sample dummy step
         sh 'sleep 5'
       }
+    }
+  }
+  post { 
+    aborted {
+      slackSend (color: '#FFFF00', message: "ABORTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    }
+    failure {
+      slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    }
+    success {
+      slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
     }
   }
 }
