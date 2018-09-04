@@ -8,11 +8,13 @@ pipeline {
   }
 
   stages {
-    stage ('Start') {
+    stage ('Begin') {
       steps{
         // send build started notification
-        // TODO: there should be a notification script built, in scm and put
-        // a shared library...
+        // TODO: there should be a notification script, in scm and put
+        // a shared library so that notification configuration information
+        // is abstracted from the Jenkinsfile. Since it's only Slack for now
+        // this is sufficient
         slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
       }
     }
