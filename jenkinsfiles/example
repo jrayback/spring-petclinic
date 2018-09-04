@@ -5,6 +5,8 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
+    SMOKETESTPASS = true
+    MONITORPASS = true
   }
 
   stages {
@@ -90,6 +92,8 @@ pipeline {
         echo "Deploying to test environment..."
         sh "sleep 2"
         echo "Deployed to test environment"
+        // send a message to the channel that a dev environment is available
+        slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://jmr.liatrio.petclinic.ngrok.io/petclinic/")
       }
     }
     stage('Validate') {
@@ -99,7 +103,14 @@ pipeline {
           steps {
             // Run automated smoke tests
             // Basic functionality, fail fast
+            echo "Running smoke tests..."
             sh 'sleep 4'
+            if( env.SMOKETESTPASS ) {
+              echo "Smoke tests PASS"
+            } else {
+              echo "Smoke tests FAIL"
+              currentBuild.result = 'FAILURE'
+            }
           }
         }
         stage('Acceptance Tests') {
