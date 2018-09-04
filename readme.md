@@ -1,4 +1,4 @@
-# Spring PetClinic Sample Application - Rock on remix!
+# Spring PetClinic Sample Application - Edited by me!
 
 
 ## Understanding the Spring Petclinic application with a few diagrams
