@@ -5,7 +5,7 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = true
+    SMOKETEST_PASS = 1
     MONITOR_PASS = 1
     SHORT_PAUSE = 1
     MED_PAUSE = 2
