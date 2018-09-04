@@ -18,77 +18,75 @@ pipeline {
         slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
       }
     }
-    stage('Commit') {
-      stages {
-        stage('Pre-Build') {
-          parallel {
-            stage('Run Unit Tests') {
-              agent any
-              steps {
-                sh "sleep 7"
-                echo "Unit tests PASS"
-              }
-            }
-            stage('Check Style') {
-              agent any
-              steps {
-                // Run some sort of linter. E.g. Checkstyle
-                echo "Running Checkstyle..."
-                sh "sleep 4"
-                echo "Checkstyle PASS"
-              }
-            }
-            stage('Code Analysis') {
-              agent any
-              steps {
-                // Do additional static code analysis. E.g. FindBugs
-                echo "Running FindBugs..."
-                sh "sleep 10"
-                echo "FindBugs PASS"
-              }
+    // stage('Commit') {
+      stage('Pre-Build') {
+        parallel {
+          stage('Run Unit Tests') {
+            agent any
+            steps {
+              sh "sleep 7"
+              echo "Unit tests PASS"
             }
           }
-        }
-        stage('Build') {
-          agent any
-          steps {
-            sh 'mvn clean install'
-          }
-        }
-        stage('Package') {
-          agent any
-          steps {
-            script {
-              if ( env.BRANCH_NAME == 'master' ) {
-                  pom = readMavenPom file: 'pom.xml'
-                  TAG = pom.version
-              } else {
-                  TAG = env.BRANCH_NAME
-              }
-              sh "docker build -t ${env.IMAGE}:${TAG} ."
+          stage('Check Style') {
+            agent any
+            steps {
+              // Run some sort of linter. E.g. Checkstyle
+              echo "Running Checkstyle..."
+              sh "sleep 4"
+              echo "Checkstyle PASS"
             }
           }
-        }
-        // Deploy to ephemeral dev environment
-        // in this case I pause to let the developer manually inspect
-        // before continuing...
-        stage('Deploy to Dev') {
-          steps {
-            echo "Deploying to dev environment..."
-            sh "sleep 3"
+          stage('Code Analysis') {
+            agent any
+            steps {
+              // Do additional static code analysis. E.g. FindBugs
+              echo "Running FindBugs..."
+              sh "sleep 10"
+              echo "FindBugs PASS"
+            }
           }
         }
       }
-    }
-    stage('Acceptance'){
-      input {
-        message "Deploy to test?"
-        ok "Yes"
+      stage('Build') {
+        agent any
+        steps {
+          sh 'mvn clean install'
+        }
       }
+      stage('Package') {
+        agent any
+        steps {
+          script {
+            if ( env.BRANCH_NAME == 'master' ) {
+                pom = readMavenPom file: 'pom.xml'
+                TAG = pom.version
+            } else {
+                TAG = env.BRANCH_NAME
+            }
+            sh "docker build -t ${env.IMAGE}:${TAG} ."
+          }
+        }
+      }
+      // Deploy to ephemeral dev environment
+      // in this case I pause to let the developer manually inspect
+      // before continuing...
+      stage('Deploy to Dev') {
+        steps {
+          echo "Deploying to dev environment..."
+          sh "sleep 3"
+        }
+      }
+    //}
+    //stage('Acceptance'){
       // Deploy to Test environment. In this case the docker container
       // simulates this. Test environment could be ephemeral or permanent
       // but doesn't need to fully simulate prod environment.
       stage('Deploy to Test') {
+        input {
+          message "Deploy to test?"
+          ok "Yes"
+        }
         agent any
         steps {
           sh 'docker rm -f petclinic-tomcat-temp || true'
@@ -102,7 +100,7 @@ pipeline {
           sh 'sleep 4'
         }
       }
-    }
+    //}
     // Princess is Etsy's name for an environment that fully simulates prod
     // but is only internally accessible. Deploy here before prod.
     stage('Deploy to Princess') {
