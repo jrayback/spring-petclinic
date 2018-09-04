@@ -72,6 +72,7 @@ pipeline {
       // in this case I pause to let the developer manually inspect
       // before continuing...
       stage('Deploy to Dev') {
+        agent any
         steps {
           echo "Deploying to dev environment..."
           sh "sleep 3"
