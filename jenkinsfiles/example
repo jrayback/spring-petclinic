@@ -133,7 +133,7 @@ pipeline {
             // Run automated acceptance tests
             // More comprehensive, look for regressions
             echo "Running acceptance tests..."
-            sh "sleep '${env.MED_PAUSE}'"
+            sh "sleep '${env.LONG_PAUSE}'"
             echo "Acceptance tests PASS"
           }
         }
