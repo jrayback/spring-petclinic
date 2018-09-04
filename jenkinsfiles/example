@@ -5,8 +5,11 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETESTPASS = true
-    MONITORPASS = true
+    SMOKETEST_PASS = true
+    MONITOR_PASS = true
+    SHORT_PAUSE = 3
+    MED_PAUSE = 5
+    LONG_PAUSE = 8
   }
 
   stages {
@@ -25,7 +28,7 @@ pipeline {
         stage('Run Unit Tests') {
           agent any
           steps {
-            sh "sleep 7"
+            sh "sleep '${env.SHORT_PAUSE}'"
             echo "Unit tests PASS"
           }
         }
@@ -105,11 +108,13 @@ pipeline {
             // Basic functionality, fail fast
             echo "Running smoke tests..."
             sh 'sleep 4'
-            if( env.SMOKETESTPASS ) {
-              echo "Smoke tests PASS"
-            } else {
-              echo "Smoke tests FAIL"
-              currentBuild.result = 'FAILURE'
+            script {
+              if( env.SMOKETESTPASS ) {
+                echo "Smoke tests PASS"
+              } else {
+                echo "Smoke tests FAIL"
+                currentBuild.result = 'FAILURE'
+              }
             }
           }
         }
