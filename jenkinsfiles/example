@@ -19,62 +19,64 @@ pipeline {
       }
     }
     stage('Commit') {
-      stage('Pre-Build') {
-        parallel {
-          stage('Run Unit Tests') {
-            agent any
-            steps {
-              sh "sleep 7"
-              echo "Unit tests PASS"
+      stages {
+        stage('Pre-Build') {
+          parallel {
+            stage('Run Unit Tests') {
+              agent any
+              steps {
+                sh "sleep 7"
+                echo "Unit tests PASS"
+              }
             }
-          }
-          stage('Check Style') {
-            agent any
-            steps {
-              // Run some sort of linter. E.g. Checkstyle
-              echo "Running Checkstyle..."
-              sh "sleep 4"
-              echo "Checkstyle PASS"
+            stage('Check Style') {
+              agent any
+              steps {
+                // Run some sort of linter. E.g. Checkstyle
+                echo "Running Checkstyle..."
+                sh "sleep 4"
+                echo "Checkstyle PASS"
+              }
             }
-          }
-          stage('Code Analysis') {
-            agent any
-            steps {
-              // Do additional static code analysis. E.g. FindBugs
-              echo "Running FindBugs..."
-              sh "sleep 10"
-              echo "FindBugs PASS"
+            stage('Code Analysis') {
+              agent any
+              steps {
+                // Do additional static code analysis. E.g. FindBugs
+                echo "Running FindBugs..."
+                sh "sleep 10"
+                echo "FindBugs PASS"
+              }
             }
           }
         }
-      }
-      stage('Build') {
-        agent any
-        steps {
-          sh 'mvn clean install'
-        }
-      }
-      stage('Package') {
-        agent any
-        steps {
-          script {
-            if ( env.BRANCH_NAME == 'master' ) {
-                pom = readMavenPom file: 'pom.xml'
-                TAG = pom.version
-            } else {
-                TAG = env.BRANCH_NAME
-            }
-            sh "docker build -t ${env.IMAGE}:${TAG} ."
+        stage('Build') {
+          agent any
+          steps {
+            sh 'mvn clean install'
           }
         }
-      }
-      // Deploy to ephemeral dev environment
-      // in this case I pause to let the developer manually inspect
-      // before continuing...
-      stage('Deploy to Dev') {
-        steps {
-          echo "Deploying to dev environment..."
-          sh "sleep 3"
+        stage('Package') {
+          agent any
+          steps {
+            script {
+              if ( env.BRANCH_NAME == 'master' ) {
+                  pom = readMavenPom file: 'pom.xml'
+                  TAG = pom.version
+              } else {
+                  TAG = env.BRANCH_NAME
+              }
+              sh "docker build -t ${env.IMAGE}:${TAG} ."
+            }
+          }
+        }
+        // Deploy to ephemeral dev environment
+        // in this case I pause to let the developer manually inspect
+        // before continuing...
+        stage('Deploy to Dev') {
+          steps {
+            echo "Deploying to dev environment..."
+            sh "sleep 3"
+          }
         }
       }
     }
