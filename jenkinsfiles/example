@@ -6,10 +6,10 @@ pipeline {
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
     SMOKETEST_PASS = 'true'
-    MONITOR_PASS = 'false'
-    SHORT_PAUSE = 1
-    MED_PAUSE = 2
-    LONG_PAUSE = 3
+    MONITOR_PASS = 'true'
+    SHORT_PAUSE = 3
+    MED_PAUSE = 8
+    LONG_PAUSE = 21
   }
 
   stages {
@@ -29,7 +29,7 @@ pipeline {
         stage('Run Unit Tests') {
           agent any
           steps {
-            sh "sleep '${env.LONG_PAUSE}'"
+            sh "sleep '${env.MED_PAUSE}'"
             echo "Unit tests PASS"
           }
         }
@@ -56,8 +56,8 @@ pipeline {
     stage('Build') {
       agent any
       steps {
-        //***sh 'mvn clean install'
-        echo "install"
+        sh 'mvn clean install'
+        // echo "install"
       }
     }
     stage('Package') {
@@ -70,8 +70,8 @@ pipeline {
           } else {
               TAG = env.BRANCH_NAME
           }
-          //***sh "docker build -t ${env.IMAGE}:${TAG} ."
-          echo "package"
+          sh "docker build -t ${env.IMAGE}:${TAG} ."
+          // echo "package"
         }
       }
     }
@@ -80,8 +80,8 @@ pipeline {
     stage('Deploy to Dev') {
       agent any
       steps {
-        //***sh 'docker rm -f petclinic-tomcat-temp || true'
-        //***sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+        sh 'docker rm -f petclinic-tomcat-temp || true'
+        sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
         // send a message to the channel that a dev environment is available
         slackSend (color: '#00FF00', message: "DEV environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
       }
@@ -132,7 +132,7 @@ pipeline {
             // Run automated acceptance tests
             // More comprehensive, look for regressions
             echo "Running acceptance tests..."
-            sh "sleep '${env.LONG_PAUSE}'"
+            sh "sleep '${env.MED_PAUSE}'"
             echo "Acceptance tests PASS"
           }
         }
@@ -179,7 +179,7 @@ pipeline {
           steps {
             // Run basic load test, E.g. JMeter or Gattling
             echo "Running JMeter tests..."
-            sh "sleep '${env.LONG_PAUSE}'"
+            sh "sleep '${env.MED_PAUSE}'"
             echo "JMeter test PASS"
           }
         }
