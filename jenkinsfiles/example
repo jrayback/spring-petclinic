@@ -18,107 +18,146 @@ pipeline {
         slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
       }
     }
-    // stage('Commit') {
-      stage('Pre-Build') {
-        parallel {
-          stage('Run Unit Tests') {
-            agent any
-            steps {
-              sh "sleep 7"
-              echo "Unit tests PASS"
-            }
+    stage('Pre-Build') {
+      parallel {
+        stage('Run Unit Tests') {
+          agent any
+          steps {
+            sh "sleep 7"
+            echo "Unit tests PASS"
           }
-          stage('Check Style') {
-            agent any
-            steps {
-              // Run some sort of linter. E.g. Checkstyle
-              echo "Running Checkstyle..."
-              sh "sleep 4"
-              echo "Checkstyle PASS"
-            }
+        }
+        stage('Check Style') {
+          agent any
+          steps {
+            // Run some sort of linter. E.g. Checkstyle
+            echo "Running Checkstyle..."
+            sh "sleep 4"
+            echo "Checkstyle PASS"
           }
-          stage('Code Analysis') {
-            agent any
-            steps {
-              // Do additional static code analysis. E.g. FindBugs
-              echo "Running FindBugs..."
-              sh "sleep 10"
-              echo "FindBugs PASS"
-            }
+        }
+        stage('Code Analysis') {
+          agent any
+          steps {
+            // Do additional static code analysis. E.g. FindBugs
+            echo "Running FindBugs..."
+            sh "sleep 10"
+            echo "FindBugs PASS"
           }
         }
       }
-      stage('Build') {
-        agent any
-        steps {
-          sh 'mvn clean install'
+    }
+    stage('Build') {
+      agent any
+      steps {
+        sh 'mvn clean install'
+      }
+    }
+    stage('Package') {
+      agent any
+      steps {
+        script {
+          if ( env.BRANCH_NAME == 'master' ) {
+              pom = readMavenPom file: 'pom.xml'
+              TAG = pom.version
+          } else {
+              TAG = env.BRANCH_NAME
+          }
+          sh "docker build -t ${env.IMAGE}:${TAG} ."
         }
       }
-      stage('Package') {
-        agent any
-        steps {
-          script {
-            if ( env.BRANCH_NAME == 'master' ) {
-                pom = readMavenPom file: 'pom.xml'
-                TAG = pom.version
-            } else {
-                TAG = env.BRANCH_NAME
-            }
-            sh "docker build -t ${env.IMAGE}:${TAG} ."
+    }
+    // Deploy to ephemeral dev environment - in this case locally running
+    // docker container
+    stage('Deploy to Dev') {
+      agent any
+      steps {
+        sh 'docker rm -f petclinic-tomcat-temp || true'
+        sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+        // send a message to the channel that a dev environment is available
+        slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
+      }
+    }
+    // Deploy to Test environment. In this case another docker container
+    // could simulate this. Test environment could be ephemeral or permanent
+    // but doesn't need to fully simulate prod environment.
+    stage('Deploy to Test') {
+      agent any
+      steps {
+        // Doing this above in deploy to dev...don't need to do it twice
+        // sh 'docker rm -f petclinic-tomcat-temp || true'
+        // sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+        echo "Deploying to test environment..."
+        sh "sleep 2"
+        echo "Deployed to test environment"
+      }
+    }
+    stage('Validate') {
+      parallel {
+        stage('Smoke Tests') {
+          agent any
+          steps {
+            // Run automated smoke tests
+            // Basic functionality, fail fast
+            sh 'sleep 4'
+          }
+        }
+        stage('Acceptance Tests') {
+          agent any
+          steps {
+            // Run automated acceptance tests
+            // More comprehensive, look for regressions
+            sh 'sleep 30'
           }
         }
       }
-      // Deploy to ephemeral dev environment - in this case locally running
-      // docker container
-      // For now, I pause to let the developer manually inspect
-      // before continuing...
-      stage('Deploy to Dev') {
-        agent any
-        steps {
-          sh 'docker rm -f petclinic-tomcat-temp || true'
-          sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
-          // send a message to the channel that a dev environment is available
-          slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
-        }
-      }
-    //}
-    //stage('Acceptance'){
-      // Deploy to Test environment. In this case another docker container
-      // could simulate this. Test environment could be ephemeral or permanent
-      // but doesn't need to fully simulate prod environment.
-      stage('Deploy to Test') {
-        input {
-          message "Deploy to test?"
-          ok "Yes"
-        }
-        agent any
-        steps {
-          // sh 'docker rm -f petclinic-tomcat-temp || true'
-          // sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
-          echo "Deploying to test environment..."
-          sh "sleep 2"
-          echo "Deployed to test environment"
-        }
-      }
-      stage('Smoke-Test') {
-        agent any
-        steps {
-          // Run automated smoke tests
-          sh 'sleep 4'
-        }
-      }
-    //}
-    // Princess is Etsy's name for an environment that fully simulates prod
+    }
+    // Princess (E.g.) is Etsy's name for an environment that fully simulates prod
     // but is only internally accessible. Deploy here before prod.
-    stage('Deploy to Princess') {
+    // This allows for any type of manual inspection required before going
+    // to blue/green
+    stage("Deploy to 'Princess'") {
       agent any
       steps {
         //sample dummy step
         sh 'sleep 4'
       }
     }
-    // JMR sample test to prove I can update the pipeline
-    stage('Deploy to Prod') {
+    stage('Pre-Prod') {
+      parallel {
+        stage('UAT') {
+          agent any
+          steps {
+            // Run User Acceptance Tests (automated or manual), E.g. Cucumber
+            echo "Running Cucumber tests..."
+            sh 'sleep 10'
+            echo "Cucumber tests PASS"
+          }
+        }
+        stage('Security Sanity Check') {
+          agent any
+          steps {
+            // Run basic security/pen tests, assumes internal princess environment
+            // can be made to very closely emulate prod (firewalls, etc.)
+            // Use maybe something proprietary like Nessus...
+            echo "Running Nessus check..."
+            sh 'sleep 20'
+            echo "Nessus check PASS"
+          }
+        }
+        stage('Basic load test') {
+          agent any
+          steps {
+            // Run basic load test, E.g. JMeter or Gattling
+            echo "Running JMeter tests..."
+            sh 'sleep 25'
+            echo "JMeter test PASS"
+          }
+        }
+      }
+    }
+    // When everything looks good in Princess, deploy to dark prod
+    stage('Deploy to Dark Prod') {
       input {
         message "Deploy to prod?"
         ok "Yes"
@@ -127,6 +166,28 @@ pipeline {
       steps {
         //sample dummy step
         sh 'sleep 5'
+      }
+    }
+    stage('Cutover') {
+      parallel {
+        // Make dark prod light
+        stage('Redirect Load Balancer') {
+          agent any
+          steps {
+            echo "Load balancer now pointing a new light prod..."
+          }
+        }
+        // Monitor http traffic in new light prod environment for a 
+        // set period of time, if things start going awry, revert to previous
+        // light prod and fail, otherwise succeed.
+        stage('Monitor New Prod Environment') {
+          agent any
+          steps {
+            echo 'Monitoring http traffic in new prod environment...'
+            sh 'sleep 60'
+            echo 'Traffic looks good!'
+          }
+        }
       }
     }
   }
