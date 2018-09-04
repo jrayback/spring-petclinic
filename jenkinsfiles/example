@@ -5,11 +5,11 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = true
-    MONITOR_PASS = true
-    SHORT_PAUSE = 3
-    MED_PAUSE = 5
-    LONG_PAUSE = 8
+    SMOKETEST_PASS = 1
+    MONITOR_PASS = 1
+    SHORT_PAUSE = 1
+    MED_PAUSE = 2
+    LONG_PAUSE = 3
   }
 
   stages {
@@ -28,7 +28,7 @@ pipeline {
         stage('Run Unit Tests') {
           agent any
           steps {
-            sh "sleep '${env.SHORT_PAUSE}'"
+            sh "sleep '${env.LONG_PAUSE}'"
             echo "Unit tests PASS"
           }
         }
@@ -37,7 +37,7 @@ pipeline {
           steps {
             // Run some sort of linter. E.g. Checkstyle
             echo "Running Checkstyle..."
-            sh "sleep 4"
+            sh "sleep '${env.SHORT_PAUSE}'"
             echo "Checkstyle PASS"
           }
         }
@@ -46,7 +46,7 @@ pipeline {
           steps {
             // Do additional static code analysis. E.g. FindBugs
             echo "Running FindBugs..."
-            sh "sleep 10"
+            sh "sleep '${env.MED_PAUSE}'"
             echo "FindBugs PASS"
           }
         }
@@ -93,10 +93,10 @@ pipeline {
         // sh 'docker rm -f petclinic-tomcat-temp || true'
         // sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
         echo "Deploying to test environment..."
-        sh "sleep 2"
+        sh "sleep '${env.SHORT_PAUSE}'"
         echo "Deployed to test environment"
         // send a message to the channel that a dev environment is available
-        slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://jmr.liatrio.petclinic.ngrok.io/petclinic/")
+        slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) deployed to Test: http://jmr.liatrio.petclinic.ngrok.io/petclinic/")
       }
     }
     stage('Validate') {
@@ -107,7 +107,7 @@ pipeline {
             // Run automated smoke tests
             // Basic functionality, fail fast
             echo "Running smoke tests..."
-            sh 'sleep 4'
+            sh "sleep '${env.MED_PAUSE}'"
             script {
               if( env.SMOKETESTPASS ) {
                 echo "Smoke tests PASS"
@@ -123,7 +123,7 @@ pipeline {
           steps {
             // Run automated acceptance tests
             // More comprehensive, look for regressions
-            sh 'sleep 30'
+            sh "sleep '${env.LONG_PAUSE}'"
           }
         }
       }
@@ -136,7 +136,7 @@ pipeline {
       agent any
       steps {
         //sample dummy step
-        sh 'sleep 4'
+        sh "sleep '${env.SHORT_PAUSE}'"
       }
     }
     stage('Pre-Prod') {
@@ -146,7 +146,7 @@ pipeline {
           steps {
             // Run User Acceptance Tests (automated or manual), E.g. Cucumber
             echo "Running Cucumber tests..."
-            sh 'sleep 10'
+            sh "sleep '${env.SHORT_PAUSE}'"
             echo "Cucumber tests PASS"
           }
         }
@@ -157,7 +157,7 @@ pipeline {
             // can be made to very closely emulate prod (firewalls, etc.)
             // Use maybe something proprietary like Nessus...
             echo "Running Nessus check..."
-            sh 'sleep 20'
+            sh "sleep '${env.MED_PAUSE}'"
             echo "Nessus check PASS"
           }
         }
@@ -166,7 +166,7 @@ pipeline {
           steps {
             // Run basic load test, E.g. JMeter or Gattling
             echo "Running JMeter tests..."
-            sh 'sleep 25'
+            sh "sleep '${env.LONG_PAUSE}'"
             echo "JMeter test PASS"
           }
         }
@@ -181,7 +181,7 @@ pipeline {
       agent any
       steps {
         //sample dummy step
-        sh 'sleep 5'
+        sh "sleep '${env.SHORT_PAUSE}'"
       }
     }
     stage('Cutover') {
@@ -200,7 +200,7 @@ pipeline {
           agent any
           steps {
             echo 'Monitoring http traffic in new prod environment...'
-            sh 'sleep 60'
+            sh "sleep '${env.LONG_PAUSE}'"
             echo 'Traffic looks good!'
           }
         }
