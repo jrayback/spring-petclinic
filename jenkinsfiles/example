@@ -10,7 +10,7 @@ pipeline {
     SHORT_PAUSE = 3
     MED_PAUSE = 8
     LONG_PAUSE = 21
-    JOB_MESSAGE = "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})"
+    JOB_DESCRIPTION = "${env.JOB_NAME} [${env.BUILD_NUMBER}] (${env.BUILD_URL})"
   }
 
   stages {
@@ -21,7 +21,7 @@ pipeline {
         // a Jenkins shared library so that notification configuration information
         // is abstracted from the Jenkinsfile. Since it's only Slack for now
         // and only a demo, this is sufficient
-        slackSend (color: '#FFFF00', message: env.JOB_MESSAGE)
+        slackSend (color: '#FFFF00', message: "STARTED:\n'${env.JOB_DESCRIPTION}'\n\`${env.BRANCH_NAME} ${env.GIT_COMMIT}\`")
       }
     }
     // See if it's even worth building this 
