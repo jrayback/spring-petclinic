@@ -8,6 +8,8 @@ pipeline {
   }
 
   stages {
+    // send build started notification
+    slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
     stage('Pre-validate') {
       parallel {
         stage('Static Code Analysis') {
