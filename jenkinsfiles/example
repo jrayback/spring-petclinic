@@ -229,13 +229,14 @@ pipeline {
             script {
               if( env.MONITOR_PASS == 'false' ) {
                 echo "Something's gone horribly wrong in production!"
+                slackSend (color: '#FF0000', message: "Something's gone horribly wrong in production! Here's the report: https://grafana.com/")
                 // Point load balancer back to former light prod
                 // SEE SIMILAR CODE IN STAGE ABOVE...this is another option for a shared script of some sort in
                 // a Jenkins shared library
                 echo "Redirecting load balancer..."
                 sh "sleep '${env.SHORT_PAUSE}'"
                 // send a message to the channel that we've reverted prod
-                slackSend (color: '#00FF00', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) LIGHT PROD REVERTED!")
+                slackSend (color: '#FF0000', message: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) LIGHT PROD REVERTED!")
                 currentBuild.result = 'FAILURE'
                 error('Prod monitoring FAIL')
               }
