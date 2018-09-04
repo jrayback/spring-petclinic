@@ -5,8 +5,8 @@ pipeline {
 
   environment {
     IMAGE = "liatrio/petclinic-tomcat"
-    SMOKETEST_PASS = 1
-    MONITOR_PASS = 1
+    SMOKETEST_PASS = false
+    MONITOR_PASS = true
     SHORT_PAUSE = 1
     MED_PAUSE = 2
     LONG_PAUSE = 3
@@ -55,7 +55,7 @@ pipeline {
     stage('Build') {
       agent any
       steps {
-        sh 'mvn clean install'
+        //***sh 'mvn clean install'
       }
     }
     stage('Package') {
@@ -68,7 +68,7 @@ pipeline {
           } else {
               TAG = env.BRANCH_NAME
           }
-          sh "docker build -t ${env.IMAGE}:${TAG} ."
+          //***sh "docker build -t ${env.IMAGE}:${TAG} ."
         }
       }
     }
@@ -77,8 +77,8 @@ pipeline {
     stage('Deploy to Dev') {
       agent any
       steps {
-        sh 'docker rm -f petclinic-tomcat-temp || true'
-        sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
+        //***sh 'docker rm -f petclinic-tomcat-temp || true'
+        //***sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
         // send a message to the channel that a dev environment is available
         slackSend (color: '#00FF00', message: "Dev environment for Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) available at http://localhost:9966/petclinic/")
       }
@@ -109,11 +109,12 @@ pipeline {
             echo "Running smoke tests..."
             sh "sleep '${env.MED_PAUSE}'"
             script {
-              if( env.SMOKETESTPASS ) {
+              if( env.SMOKETEST_PASS ) {
                 echo "Smoke tests PASS"
               } else {
                 echo "Smoke tests FAIL"
                 currentBuild.result = 'FAILURE'
+                error('Smoke tests FAIL')
               }
             }
           }
