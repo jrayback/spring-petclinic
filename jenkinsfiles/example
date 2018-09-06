@@ -76,6 +76,17 @@ pipeline {
         }
       }
     }
+    // Once built and packaged, commit to binary repository
+    stage('Sign/Store Binary Artifact') {
+      agent any
+      steps {
+        echo "Signing artifact..."
+        // Use an artifact repository (E.g. Nexus or Artifactory)
+        echo "Sending artifact to repository..."
+        sh "sleep '${env.SHORT_PAUSE}'"
+        echo "Done"
+      }
+    }
     // Deploy to ephemeral dev environment - in this case locally running
     // docker container
     stage('Deploy to Dev') {
