@@ -95,7 +95,7 @@ pipeline {
         sh 'docker rm -f petclinic-tomcat-temp || true'
         sh "docker run -d -p 9966:8080 --name petclinic-tomcat-temp ${env.IMAGE}:${TAG}"
         // send a message to the channel that a dev environment is available
-        slackSend (color: '##FFFF00', message: "${env.JOB_DESCRIPTION}\nDEV environment available at http://localhost:9966/petclinic/")
+        slackSend (color: '#FFFF00', message: "${env.JOB_DESCRIPTION}\nDEV environment available at http://localhost:9966/petclinic/")
       }
     }
     // Deploy to Test environment. In this case it's the local docker container made
